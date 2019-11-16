@@ -14,7 +14,6 @@ USE_PRETTY_JSON: Results returned in pretty JSON
 """
 
 import convert.convert as convert
-import json
 import logging
 import sys
 
@@ -38,6 +37,7 @@ except ModuleNotFoundError:
     logging.error("Python [requests] module is required.")
     sys.exit(RECOVERABLE_ERROR)
 
+
 def call_jboss_api(cli_command):
     """Makes a REST API call to the JBOSS maangement console
 
@@ -48,7 +48,7 @@ def call_jboss_api(cli_command):
 
     """
 
-    header = {'content-type':'application/json'}
+    header = {'content-type': 'application/json'}
 
     # Determine if we are using HTTP GET or POST method
     request_type = get_request_type(cli_command)
@@ -60,12 +60,12 @@ def call_jboss_api(cli_command):
     # when using GET method requests. This will not matter if I end up using this as an Ansible module
     # since I will just be returning the json data to the module
     if USE_PRETTY_JSON is True:
-        api_call = { **api_call, "json.pretty":1 }
+        api_call = {**api_call, "json.pretty": 1}
 
     response = None
 
     try:
-        if request_type is "GET":
+        if request_type == "GET":
             # HACK: JBOSS REST API returns different data structure when using HTTP GET
             # It completely removes the { outcome: [outcome], results: [return] } and instead just returns [return]
             # This makes the output inconsistent and possibly breaking for scripting when used in combination
@@ -91,13 +91,13 @@ def call_jboss_api(cli_command):
             if response.status_code == 200:
                 # HTTP GET response code 200 indicates returns json structure inconsistent with HTTP GET 500,
                 # as well as HTTP POST 200,500. Normalizing the data structure in that event
-                results = { "outcome" : "success", "result": response.json() }
+                results = {"outcome": "success", "result": response.json()}
 
             # Response code 500 will output the correct data structure, only 200 returns inconsistently
             elif response.status_code == 500:
                 results = response.json
 
-        elif request_type is "POST":
+        elif request_type == "POST":
 
             response = requests.post(
                 url(JBOSS_URL),
@@ -151,12 +151,12 @@ def get_request_type(cli_command):
 
     # Suported operations for HTTP GET method requests
     supported_get_ops = [
-        "read-attribute", # as attribute
-        "read-resource", # as resource
-        "read-resource-description", # as resource-description
-        "list-snapshots", # as snapshots
-        #"read-operation-description", # as operation=operation-description
-        "read-operation-names" # as operation-names
+        "read-attribute",  # as attribute
+        "read-resource",  # as resource
+        "read-resource-description",  # as resource-description
+        "list-snapshots",  # as snapshots
+        # "read-operation-description",  # as operation=operation-description
+        "read-operation-names"  # as operation-names
     ]
 
     # If our CLI command is using one of the read-only HTTP GET operations supported by JBoss/Wildfly, use HTTP GET
@@ -167,7 +167,7 @@ def get_request_type(cli_command):
     return request_type
 
 
-def url(url, api_path = ""):
+def url(url, api_path=""):
     """Return a structured URL for API calls"""
 
     return url + ":" + JBOSS_PORT + "/management" + api_path

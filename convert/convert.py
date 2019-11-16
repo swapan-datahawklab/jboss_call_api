@@ -6,9 +6,11 @@ RECOVERABLE_ERROR = 1
 
 logging.basicConfig(format='%(asctime)s-%(levelname)s-%(message)s', level=logging.INFO)
 
+
 class Error(Exception):
     """Base class for exception"""
     pass
+
 
 class NoOperationFound(Error):
     """Raised when an operation not found in CLI command"""
@@ -16,8 +18,9 @@ class NoOperationFound(Error):
     def __init__(self, expression):
         self.expression = expression
         print(f'Error: Unable to find operation in command: ({expression}) - '
-                'Operations should be prepended with a single colon. Eg. (:reload)')
+              'Operations should be prepended with a single colon. Eg. (:reload)')
         sys.exit(RECOVERABLE_ERROR)
+
 
 class TooManyOperations(Error):
     """Too many operations found in command"""
@@ -25,8 +28,9 @@ class TooManyOperations(Error):
     def __init__(self, expression):
         self.expression = expression
         logging.error(f'Too many operations found in ({expression}) - '
-                'Only a single operation should be defined. E.g (:read-resource)')
+                      'Only a single operation should be defined. E.g (:read-resource)')
         sys.exit(RECOVERABLE_ERROR)
+
 
 def jboss_command_to_http_request(cli_call, request_type):
     """Returns a mostly structured format suitable for JBOSS API calls
@@ -67,7 +71,7 @@ def jboss_command_to_http_request(cli_call, request_type):
         logging.debug(f'Executing standalone operation')
 
         # Remove the precedeing : from the command. E.g :read-attribute becomes read-attribute
-        cli_call = cli_call.split(':',1)[1]
+        cli_call = cli_call.split(':', 1)[1]
         operation_no_args, args = get_operation_and_args(cli_call, request_type)
 
     elif cli_call.startswith('/') and cli_call.count(':') == 1:
@@ -84,30 +88,28 @@ def jboss_command_to_http_request(cli_call, request_type):
     else:
         sys.exit('Unknown command {cli_call}')
 
-    if request_type is "GET":
+    if request_type == "GET":
         # Split off the first portion of the CLI operation as the URL path does not contain it
         # E.g: read-resource -> resource, list-snapshots -> snapshots
-        operation_no_args = operation_no_args.split('-',1)[1]
+        operation_no_args = operation_no_args.split('-', 1)[1]
 
-    # TODO: remove these
     logging.debug(f'Path: {path}')
     logging.debug(f'Operation: {operation_no_args}')
     logging.debug(f'Arguments: {args}')
 
-
     # Start to create the full API call we will be using
-    api_call = { "operation" : operation_no_args }
+    api_call = {"operation": operation_no_args}
 
     # Append our arguments to our api call
     if args is not None:
-        api_call = { **api_call, **args }
+        api_call = {**api_call, **args}
 
     # Append our path to our API call
     # The path will be a list of seperated elements when using HTTP POST and a string containing the partial
     # URI that we will append to the URL for HTTP GET methods. We extract the value if necessary when making
     # final URL during the HTTP request
     if path is not None:
-        api_call = { **api_call, "address" : path }
+        api_call = {**api_call, "address": path}
 
     logging.debug(f'API call being returned: {api_call}')
 
@@ -172,6 +174,7 @@ def get_operation_and_args(isolated_operation, request_type):
 
     return operation_no_args, args
 
+
 def get_path_to_resource(isolated_path, request_type):
     """Returns a modified CLI path to resource suitable for API requests
 
@@ -196,8 +199,8 @@ def get_path_to_resource(isolated_path, request_type):
 
     # Take a resource path such as /subsystem=undertow/server=default-server
     # and turn it into path = [http://url] /subsystem/undertow/server/default-server suitable URL for HTTP GET
-    if request_type is "GET":
-        path = isolated_path.replace('=','/')
+    if request_type == "GET":
+        path = isolated_path.replace('=', '/')
 
     else:
         # Split the path into a list of its independent segments suitable for HTTP POST request
